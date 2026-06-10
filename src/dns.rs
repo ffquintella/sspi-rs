@@ -354,12 +354,11 @@ cfg_if::cfg_if! {
     if #[cfg(feature="dns_resolver")] {
         use hickory_resolver::TokioResolver;
         use hickory_resolver::system_conf::read_system_conf;
-        use hickory_resolver::config::{ResolverConfig, NameServerConfig, ResolverOpts};
-        use hickory_resolver::proto::xfer::Protocol;
-        use hickory_resolver::name_server::GenericConnector;
-        use hickory_proto::runtime::TokioRuntimeProvider;
+        use hickory_resolver::config::{ConnectionConfig, ResolverConfig, NameServerConfig, ResolverOpts};
+        use hickory_resolver::net::runtime::TokioRuntimeProvider;
+        use hickory_resolver::proto::rr::RData;
         use std::env;
-        use std::net::{IpAddr,SocketAddr};
+        use std::net::IpAddr;
         use std::str::FromStr;
         use url::Url;
 
@@ -373,29 +372,21 @@ cfg_if::cfg_if! {
             if let Ok(url) = Url::parse(&url)
                 && let Some(url_host) = url.host_str() {
                     let url_port = url.port().unwrap_or(53);
-                    let protocol = match url.scheme().to_lowercase().as_str() {
-                        "tcp" => Protocol::Tcp,
-                        "udp" => Protocol::Udp,
-                        _ => Protocol::Udp,
+                    let mut connection = match url.scheme().to_lowercase().as_str() {
+                        "tcp" => ConnectionConfig::tcp(),
+                        _ => ConnectionConfig::udp(),
                     };
+                    connection.port = url_port;
                     if let Ok(ip_addr) = IpAddr::from_str(url_host) {
-                        let socket_addr = SocketAddr::new(ip_addr, url_port);
-                        return Some(NameServerConfig {
-                            socket_addr,
-                            protocol,
-                            tls_dns_name: None,
-                            trust_negative_responses: false,
-                            http_endpoint: None,
-                            bind_addr: None
-                        });
+                        return Some(NameServerConfig::new(ip_addr, false, vec![connection]));
                     }
                 }
 
             None
         }
 
-        fn get_dns_resolver_from_name_servers(name_servers: Vec<String>) -> TokioResolver {
-            let mut resolver_config = ResolverConfig::new();
+        fn get_dns_resolver_from_name_servers(name_servers: Vec<String>) -> Option<TokioResolver> {
+            let mut resolver_config = ResolverConfig::from_parts(None, Vec::new(), Vec::<NameServerConfig>::new());
 
             for name_server_url in name_servers {
                 if let Some(name_server) = get_dns_name_server_from_url(&name_server_url) {
@@ -403,18 +394,15 @@ cfg_if::cfg_if! {
                 }
             }
 
-            let mut resolver_options = ResolverOpts::default();
-            resolver_options.validate = false;
-
-            TokioResolver::builder_with_config(resolver_config, GenericConnector::new(TokioRuntimeProvider::new()))
-                .with_options(resolver_options)
-                .build()
+            let mut builder = TokioResolver::builder_with_config(resolver_config, TokioRuntimeProvider::default());
+            *builder.options_mut() = ResolverOpts::default();
+            builder.build().ok()
         }
 
         #[cfg(target_os="windows")]
         fn get_dns_resolver(domain: &str) -> Option<TokioResolver> {
             let name_servers = get_name_servers_for_domain(domain);
-            Some(get_dns_resolver_from_name_servers(name_servers))
+            get_dns_resolver_from_name_servers(name_servers)
         }
 
         #[cfg(not(target_os="windows"))]
@@ -422,11 +410,11 @@ cfg_if::cfg_if! {
             if let Ok(name_server_list) = env::var("SSPI_DNS_URL") {
                 let name_servers: Vec<String> = name_server_list
                     .split(',').map(|c|c.trim()).filter(|x| !x.is_empty()).map(String::from).collect();
-                Some(get_dns_resolver_from_name_servers(name_servers))
+                get_dns_resolver_from_name_servers(name_servers)
             } else if let Ok((resolver_config, resolver_options)) = read_system_conf() {
-                Some(TokioResolver::builder_with_config(resolver_config, GenericConnector::new(TokioRuntimeProvider::new()))
-                    .with_options(resolver_options)
-                    .build())
+                let mut builder = TokioResolver::builder_with_config(resolver_config, TokioRuntimeProvider::default());
+                *builder.options_mut() = resolver_options;
+                builder.build().ok()
             } else {
                 None
             }
@@ -437,22 +425,24 @@ cfg_if::cfg_if! {
 
             if let Some(resolver) = get_dns_resolver(domain) {
                 if let Ok(records) = execute_future(resolver.srv_lookup(format!("_kerberos._tcp.{domain}"))) {
-                    for record in records {
-                        let port = record.port();
-                        let target_name = record.target().to_string();
-                        let target_name = target_name.trim_end_matches('.').to_string();
-                        let kdc_host = format!("tcp://{}:{}", target_name, port);
-                        kdc_hosts.push(kdc_host);
+                    for record in records.answers() {
+                        if let RData::SRV(srv) = &record.data {
+                            let target_name = srv.target.to_utf8();
+                            let target_name = target_name.trim_end_matches('.');
+                            let kdc_host = format!("tcp://{}:{}", target_name, srv.port);
+                            kdc_hosts.push(kdc_host);
+                        }
                     }
                 }
 
                 if let Ok(records) = execute_future(resolver.srv_lookup(format!("_kerberos._udp.{domain}"))) {
-                    for record in records {
-                        let port = record.port();
-                        let target_name = record.target().to_string();
-                        let target_name = target_name.trim_end_matches('.').to_string();
-                        let kdc_host = format!("udp://{}:{}", target_name, port);
-                        kdc_hosts.push(kdc_host);
+                    for record in records.answers() {
+                        if let RData::SRV(srv) = &record.data {
+                            let target_name = srv.target.to_utf8();
+                            let target_name = target_name.trim_end_matches('.');
+                            let kdc_host = format!("udp://{}:{}", target_name, srv.port);
+                            kdc_hosts.push(kdc_host);
+                        }
                     }
                 }
             }
