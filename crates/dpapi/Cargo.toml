@@ -60,7 +60,7 @@ getrandom = "0.4"
 # TODO: Remove when stable versions will be released
 pkcs8 = "=0.11.0"
 signature = "=3.0.0"
-ecdsa = "=0.17.0-rc.17"
+ecdsa = "=0.17.0-rc.18"
 rfc6979 = "=0.5.0"
 aead = "=0.6.0-rc.10"
 ed25519 = "=3.0.0"

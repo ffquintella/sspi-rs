@@ -851,9 +851,9 @@ checksum = "92773504d58c093f6de2459af4af33faa518c13451eb8f2b5698ed3d36e7c813"
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.17"
+version = "0.17.0-rc.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc4bf51f0534ed6e59a0f2f26272b64ba55c470133f8424c2adfd1c4d59d9988"
+checksum = "54fb064faabbee66e1fc8e5c5a9458d4269dc2d8b638fe86a425adb2510d1a96"
 dependencies = [
  "der",
  "digest 0.11.3",
@@ -2074,7 +2074,7 @@ checksum = "9b4f627cb1b25917193a259e49bdad08f671f8d9708acfd5fe0a8c1455d87220"
 [[package]]
 name = "picky"
 version = "7.0.0-rc.23"
-source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#9b80cf0c1b8f957eac28b65bd0e44e12541716d3"
+source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#daff1d63eca80f283964cbeb98d01e2a6cce5a5f"
 dependencies = [
  "base64",
  "crypto-bigint",
@@ -2117,7 +2117,7 @@ dependencies = [
 [[package]]
 name = "picky-asn1"
 version = "0.10.1"
-source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#9b80cf0c1b8f957eac28b65bd0e44e12541716d3"
+source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#daff1d63eca80f283964cbeb98d01e2a6cce5a5f"
 dependencies = [
  "oid",
  "serde",
@@ -2129,7 +2129,7 @@ dependencies = [
 [[package]]
 name = "picky-asn1-der"
 version = "0.5.6"
-source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#9b80cf0c1b8f957eac28b65bd0e44e12541716d3"
+source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#daff1d63eca80f283964cbeb98d01e2a6cce5a5f"
 dependencies = [
  "picky-asn1",
  "serde",
@@ -2139,7 +2139,7 @@ dependencies = [
 [[package]]
 name = "picky-asn1-x509"
 version = "0.15.4"
-source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#9b80cf0c1b8f957eac28b65bd0e44e12541716d3"
+source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#daff1d63eca80f283964cbeb98d01e2a6cce5a5f"
 dependencies = [
  "base64",
  "crypto-bigint",
@@ -2154,7 +2154,7 @@ dependencies = [
 [[package]]
 name = "picky-krb"
 version = "0.12.3"
-source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#9b80cf0c1b8f957eac28b65bd0e44e12541716d3"
+source = "git+https://github.com/ffquintella/picky-rs?branch=fix-deps#daff1d63eca80f283964cbeb98d01e2a6cce5a5f"
 dependencies = [
  "aes",
  "block-padding",
